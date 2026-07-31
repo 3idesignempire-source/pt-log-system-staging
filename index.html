@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PT Log System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: -apple-system, sans-serif; }
+        .card-custom { border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border: 1px solid #1e293b; background-color: #1e293b !important; color: #f8fafc; }
+        .app-screen { display: none; } 
+        .active-screen { display: block; } 
+
+        /* Fixed Header Layout */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1e293b;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+        .header-title-section { flex: 1; padding-right: 8px; }
+        .header-title-section h6 { color: #f8fafc !important; }
+        .header-btn-group { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+        .btn-header-action { font-size: 11px; font-weight: 600; padding: 5px 9px; border-radius: 8px; white-space: nowrap; }
+
+        /* Mouse Click Fix Button Layout */
+        .btn-stacked-action {
+            width: 100%;
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            justify-content: center;
+            padding: 20px 16px;
+            font-weight: 700;
+            font-size: 16px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            border: none;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+        }
+        .btn-stacked-action:hover { opacity: 0.95; }
+
+        /* 3D Glass Box Icons */
+        .icon-3d-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px; 
+            box-shadow: inset 0 3px 6px rgba(255,255,255,0.2), inset 0 -3px 6px rgba(0,0,0,0.3), 0 6px 12px rgba(0,0,0,0.4);
+            width: 56px;
+            height: 56px;
+            flex-shrink: 0;
+            pointer-events: none;
+        }
+
+        .icon-3d-text {
+            font-size: 30px;
+            filter: drop-shadow(0px 5px 8px rgba(0,0,0,0.5)) saturate(1.4); 
+            pointer-events: none;
+        }
+
+        .btn-label-centered { letter-spacing: 0.3px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); pointer-events: none; }
+        
+        /* Logsheet Sections Styling */
+        .section-header-orange { background: linear-gradient(135deg, #f97316, #ea580c); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; }
+        .section-header-blue { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; }
+        .section-header-green { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; }
+        
+        .log-row-container { background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; margin-bottom: 12px; }
+        .log-row { margin-bottom: 6px; }
+        .btn-del-custom { background-color: #ef4444; color: white; border: none; font-weight: 500; }
+        
+        .accordion-button-custom {
+            background-color: #1e293b; color: #f8fafc; font-weight: 600; border-radius: 10px !important; border: 1px solid #334155;
+        }
+        .accordion-button-custom:not(.collapsed) { background-color: #0f172a; color: #38bdf8; border-bottom: 1px dashed #475569; box-shadow: none; }
+        
+        .workout-badge { font-size: 11px; padding: 3px 6px; border-radius: 6px; font-weight: 600; display: inline-block; margin-top: 4px; margin-bottom: 2px; }
+        .badge-warmup { background-color: #431407; color: #fdba74; }
+        .badge-strength { background-color: #172554; color: #93c5fd; }
+        .badge-cardio { background-color: #022c22; color: #6ee7b7; }
+        
+        .pin-note-box {
+            background-color: #0f172a;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: #cbd5e1;
+            margin-top: 3px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #334155;
+        }
+
+        .tab-btn {
+            flex: 1;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background-color: #1e293b;
+            color: #94a3b8;
+            transition: all 0.2s ease;
+        }
+        .tab-btn.active {
+            background-color: #0284c7;
+            color: #ffffff;
+            border-color: #0284c7;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.4);
+        }
+
+        .form-control, .form-select {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #0f172a !important;
+            color: #f8fafc !important;
+            border-color: #38bdf8 !important;
+            box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25);
+        }
+        .form-control::placeholder { color: #64748b; }
+
+        .table { color: #f8fafc !important; }
+        .table-hover tbody tr:hover { background-color: #334155; color: #f8fafc; }
+
+        .copyright-text { font-size: 11px; color: #64748b; margin-top: 30px; letter-spacing: 0.5px; }
+        .copyright-text a { color: #38bdf8; text-decoration: none; font-weight: 600; }
+        .copyright-text a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="container my-4" style="max-width: 600px;">
+
+    <div id="loginScreen" class="app-screen active-screen">
+        <div class="card card-custom p-4 text-center">
+            <h3 class="fw-bold mb-2 text-white">🏋️‍♂️ PT LOG SYSTEM</h3>
+            <p class="text-muted small mb-4">Track workouts, achieve goals.</p>
+            
+            <form onsubmit="handleLogin(event)">
+                <div class="mb-3 text-start">
+                    <label class="form-label small fw-semibold text-secondary">USERNAME</label>
+                    <input type="text" id="username" class="form-control" value="Prasath" placeholder="Enter username" required>
+                </div>
+                <div class="mb-4 text-start">
+                    <label class="form-label small fw-semibold text-secondary">PASSWORD</label>
+                    <input type="password" id="password" class="form-control" value="123456" placeholder="Enter password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 fw-bold py-2">LOGIN</button>
+            </form>
+            <div class="copyright-text">&copy; 2026 <a href="https://www.3iDesignEmpire.com" target="_blank">3iDesignEmpire.com</a>. All rights reserved.</div>
+        </div>
+    </div>
+
+    <div id="trainerDashboard" class="app-screen">
+        <div class="dashboard-header">
+            <div class="header-title-section">
+                <h6 class="fw-bold mb-0" id="trainerWelcome">👋 Welcome, Prasath</h6>
+                <small class="text-muted" style="font-size: 11px;">Gym Management</small>
+            </div>
+            <div class="header-btn-group">
+                <button class="btn btn-header-action btn-outline-info" onclick="openChangePasswordModal('trainer')">Password</button>
+                <button class="btn btn-header-action btn-outline-danger" onclick="logout()">Logout</button>
+            </div>
+        </div>
+        
+        <div class="d-flex flex-column gap-2 mb-4">
+            <button type="button" class="btn btn-stacked-action" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);" onclick="showScreen('manageTraineesScreen')">
+                <div class="icon-3d-box"><span class="icon-3d-text">👥</span></div>
+                <span class="btn-label-centered">Register / Manage Trainee</span>
+            </button>
+
+            <button type="button" class="btn btn-stacked-action" style="background: linear-gradient(135deg, #ea580c, #c2410c);" onclick="showScreen('configureActivitiesScreen')">
+                <div class="icon-3d-box"><span class="icon-3d-text">⚙️</span></div>
+                <span class="btn-label-centered">Configuration</span>
+            </button>
+            
+            <button type="button" class="btn btn-stacked-action" style="background: linear-gradient(135deg, #22c55e, #15803d);" onclick="openAddLogBlank()">
+                <div class="icon-3d-box"><span class="icon-3d-text">📝</span></div>
+                <span class="btn-label-centered">Add Workout Log</span>
+            </button>
+            
+            <div class="mt-4 pt-2">
+                <button type="button" class="btn btn-stacked-action" style="background: linear-gradient(135deg, #475569, #1e293b);" onclick="showScreen('viewLogsScreen')">
+                    <div class="icon-3d-box"><span class="icon-3d-text">🔍</span></div>
+                    <span class="btn-label-centered">View, Edit & Delete Logs</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="manageTraineesScreen" class="app-screen">
+        <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+            <h5 class="fw-bold mb-0 text-white">👥 Manage Trainees</h5>
+            <button class="btn btn-sm btn-secondary" onclick="showScreen('trainerDashboard')">Back</button>
+        </div>
+
+        <div class="card card-custom p-3 mb-3">
+            <h6 class="fw-bold text-info mb-3">Register New Trainee</h6>
+            <form onsubmit="saveTrainee(event)">
+                <div class="mb-2"><input type="text" id="tName" class="form-control form-control-sm" placeholder="Full Name" required></div>
+                <div class="mb-2"><input type="text" id="tUser" class="form-control form-control-sm" placeholder="Username (For Client Login)" required></div>
+                <div class="mb-2"><input type="password" id="tPass" class="form-control form-control-sm" placeholder="Password" required></div>
+                <div class="mb-3"><input type="tel" id="tPhone" class="form-control form-control-sm" placeholder="Phone Number (e.g. 60123456789)"></div>
+                <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold">SAVE TRAINEE</button>
+            </form>
+        </div>
+
+        <div class="card card-custom p-3">
+            <h6 class="fw-bold mb-2 text-secondary">Active Trainees List</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0" style="font-size: 13px;">
+                    <thead><tr><th>Name</th><th>Username</th><th>Password</th><th class="text-end">Actions</th></tr></thead>
+                    <tbody id="traineeTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="configureActivitiesScreen" class="app-screen">
+        <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+            <h5 class="fw-bold mb-0 text-white">⚙️ Configuration</h5>
+            <button class="btn btn-sm btn-secondary" onclick="showScreen('trainerDashboard')">Back</button>
+        </div>
+
+        <div class="d-flex gap-2 mb-3">
+            <button class="tab-btn active" id="btnTabExercises" onclick="switchConfigTab('exercises')">💪 Exercises</button>
+            <button class="tab-btn" id="btnTabPrograms" onclick="switchConfigTab('programs')">🎯 Programs</button>
+        </div>
+
+        <div id="secConfigExercises">
+            <div class="card card-custom p-3 mb-3 border-start border-4 border-warning">
+                <h6 class="fw-bold text-warning mb-3">💪 Add Global Exercise</h6>
+                <form onsubmit="saveGlobalActivity(event)">
+                    <div class="mb-2">
+                        <label class="small fw-semibold text-secondary">WORKOUT CATEGORY</label>
+                        <select id="actCategory" class="form-select form-select-sm" required>
+                            <option value="warmup">WARM UP</option>
+                            <option value="strength">STRENGTH TRAINING</option>
+                            <option value="cardio">CARDIO TRAINING</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small fw-semibold text-secondary">EXERCISE NAME</label>
+                        <input type="text" id="actName" class="form-control form-control-sm" placeholder="e.g., Stretching, Treadmill, Leg Curl" required>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-warning w-100 fw-bold text-dark">ADD TO MASTER EXERCISE LIST</button>
+                </form>
+
+                <div class="mt-3">
+                    <label class="small fw-semibold text-secondary mb-1">EXERCISE CATALOG</label>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 13px;">
+                            <thead><tr><th>Cat.</th><th>Exercise Name</th><th class="text-end">Action</th></tr></thead>
+                            <tbody id="activityCatalogTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="secConfigPrograms" style="display: none;">
+            <div class="card card-custom p-3 mb-3 border-start border-4 border-primary">
+                <h6 class="fw-bold text-primary mb-3">🎯 Add Master Workout Program</h6>
+                <form onsubmit="saveGlobalProgram(event)">
+                    <div class="mb-3">
+                        <label class="small fw-semibold text-secondary">PROGRAM NAME</label>
+                        <input type="text" id="progName" class="form-control form-control-sm" placeholder="e.g., Full Body Sync, Leg Day, Push Day" required>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold">ADD TO MASTER PROGRAM LIST</button>
+                </form>
+
+                <div class="mt-3">
+                    <label class="small fw-semibold text-secondary mb-1">PROGRAM CATALOG</label>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 13px;">
+                            <tbody id="programCatalogTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="addLogScreen" class="app-screen">
+        <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+            <h5 class="fw-bold mb-0 text-white" id="logScreenTitle">📝 Add Workout Log</h5>
+            <button class="btn btn-sm btn-secondary" onclick="showScreen('trainerDashboard')">Back</button>
+        </div>
+
+        <div class="card card-custom p-3">
+            <form onsubmit="saveWorkoutLog(event)">
+                <input type="hidden" id="editLogIndex" value="-1">
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small">SELECT ACTIVE TRAINEE</label>
+                    <select class="form-select" id="logTraineeSelect" required><option value="">-- Choose Trainee --</option></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small">DATE</label>
+                    <input type="date" id="logDate" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-secondary small">WORKOUT PROGRAM FOR THE DAY</label>
+                    <select id="logProgram" class="form-select" required>
+                        <option value="">-- Select Master Program --</option>
+                    </select>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center section-header-orange mb-2">
+                    <span>WARM UP</span>
+                    <button type="button" class="btn btn-xs btn-outline-light py-0 px-2 fw-bold" style="font-size:11px;" onclick="addWarmupRow()">+ Add</button>
+                </div>
+                <div id="warmupSection" class="mb-3"></div>
+
+                <div class="d-flex justify-content-between align-items-center section-header-blue mb-2">
+                    <span>STRENGTH TRAINING</span>
+                    <button type="button" class="btn btn-xs btn-outline-light py-0 px-2 fw-bold" style="font-size:11px;" onclick="addStrengthRow()">+ Add</button>
+                </div>
+                <div id="strengthSection" class="mb-3"></div>
+
+                <div class="d-flex justify-content-between align-items-center section-header-green mb-2">
+                    <span>CARDIO TRAINING</span>
+                    <button type="button" class="btn btn-xs btn-outline-light py-0 px-2 fw-bold" style="font-size:11px;" onclick="addCardioRow()">+ Add</button>
+                </div>
+                <div id="cardioSection" class="mb-3"></div>
+
+                <div class="mb-3 p-2 rounded d-flex justify-content-end align-items-center" style="background-color: #0f172a; border: 1px solid #334155;">
+                    <div class="form-check m-0 d-flex align-items-center gap-2">
+                        <input type="checkbox" class="form-check-input m-0" id="sendWhatsAppCheck" style="cursor: pointer; width: 1.1rem; height: 1.1rem; float: none;">
+                        <label class="form-check-label text-light small fw-semibold m-0" for="sendWhatsAppCheck" style="cursor: pointer; line-height: 1.2;">
+                            Send Notification
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 fw-bold mt-2 py-2" id="logSubmitBtn">SUBMIT WORKOUT LOG</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="viewLogsScreen" class="app-screen">
+        <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+            <h5 class="fw-bold mb-0 text-white">🔍 Search & Manage Logs</h5>
+            <button class="btn btn-sm btn-secondary" onclick="showScreen('trainerDashboard')">Back</button>
+        </div>
+
+        <div class="card card-custom p-3 mb-3">
+            <div class="row g-2">
+                <div class="col-12">
+                    <select class="form-select form-select-sm" id="searchTraineeSelect"><option value="">All Trainees</option></select>
+                </div>
+                <div class="col-12"><button class="btn btn-sm btn-primary w-100 fw-bold" onclick="searchLogs()">SEARCH LOGS</button></div>
+            </div>
+        </div>
+
+        <h6 class="fw-semibold text-secondary mb-2 small px-1">WORKOUT HISTORY RESULT</h6>
+        <div class="accordion" id="workoutLogsAccordion"></div>
+    </div>
+
+    <div id="traineeDashboard" class="app-screen">
+        <div class="dashboard-header">
+            <div class="header-title-section">
+                <h6 class="fw-bold mb-0 text-white" id="clientWelcome">👋 Welcome</h6>
+                <small class="text-muted" style="font-size: 11px;">Your Personal Workout Track</small>
+            </div>
+            <div class="header-btn-group">
+                <button class="btn btn-header-action btn-outline-info" id="clientPassBtn">Password</button>
+                <button class="btn btn-header-action btn-outline-danger" onclick="logout()">Logout</button>
+            </div>
+        </div>
+        <div id="traineeLogsArea"></div>
+    </div>
+
+</div>
+
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 360px;">
+    <div class="modal-content" style="border-radius:12px; background-color: #1e293b; color: #f8fafc; border: 1px solid #334155;">
+      <div class="modal-header py-2 px-3 border-bottom border-secondary">
+        <h6 class="modal-title fw-bold">🔑 Change Password</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="passModalUserType">
+        <div class="mb-2">
+            <label class="small fw-semibold text-secondary mb-1">NEW PASSWORD</label>
+            <input type="password" id="newPasswordInput" class="form-control form-control-sm" placeholder="Enter new password" required>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary w-100 fw-bold mt-2" onclick="processPasswordChange()">UPDATE PASSWORD</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Firebase Configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyA4WxjhfyhL__hPGVVNd9d7862MBSyjjM8",
+    authDomain: "pt-log-system.firebaseapp.com",
+    databaseURL: "https://pt-log-system-default-rtdb.firebaseio.com",
+    projectId: "pt-log-system",
+    storageBucket: "pt-log-system.firebasestorage.app",
+    messagingSenderId: "943304301910",
+    appId: "1:943304301910:web:f7725a57c63fd2c9034af7",
+    measurementId: "G-EJ8K0SHVF5"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const defaultActivities = [
+    { category: 'warmup', name: 'Stretching' },
+    { category: 'warmup', name: 'Jumping Jacks' },
+    { category: 'strength', name: 'Squats' },
+    { category: 'strength', name: 'Leg Curl' },
+    { category: 'strength', name: 'Leg Extension' },
+    { category: 'strength', name: 'Smith machine' },
+    { category: 'strength', name: 'Bench Press' },
+    { category: 'cardio', name: 'Treadmill Walk' },
+    { category: 'cardio', name: 'Cycling' },
+    { category: 'cardio', name: 'Rowing Machine' }
+];
+
+const defaultPrograms = [
+    "Full Body Sync",
+    "Leg Day",
+    "Push Day (Chest/Shoulder/Triceps)",
+    "Pull Day (Back/Biceps)",
+    "Core & Cardio Focus"
+];
+
+let appData = {
+    trainees: [],
+    workoutLogs: [],
+    masterActivities: defaultActivities,
+    masterPrograms: defaultPrograms,
+    trainerPassword: '123'
+};
+
+let currentLoggedInClientUsername = ""; 
+
+db.ref('pt_system').on('value', (snapshot) => {
+    let data = snapshot.val();
+    if(data) {
+        appData.trainees = data.trainees || [];
+        appData.workoutLogs = data.workoutLogs || [];
+        appData.masterActivities = data.masterActivities || defaultActivities;
+        appData.masterPrograms = data.masterPrograms || defaultPrograms;
+        appData.trainerPassword = data.trainerPassword || '123';
+    } else {
+        syncToFirebase();
+    }
+});
+
+function syncToFirebase() {
+    db.ref('pt_system').set(appData);
+}
+
+function showScreen(screenId) {
+    const screens = document.querySelectorAll('.app-screen');
+    screens.forEach(screen => screen.classList.remove('active-screen'));
+    document.getElementById(screenId).classList.add('active-screen');
+    window.scrollTo(0, 0);
+    
+    if(screenId === 'manageTraineesScreen') renderTrainees();
+    if(screenId === 'configureActivitiesScreen') { renderActivityCatalog(); renderProgramCatalog(); switchConfigTab('exercises'); }
+    if(screenId === 'addLogScreen' || screenId === 'viewLogsScreen') { populateTraineeDropdowns(); populateProgramDropdown(); }
+}
+
+function switchConfigTab(tab) {
+    if(tab === 'exercises') {
+        document.getElementById('secConfigExercises').style.display = 'block';
+        document.getElementById('secConfigPrograms').style.display = 'none';
+        document.getElementById('btnTabExercises').classList.add('active');
+        document.getElementById('btnTabPrograms').classList.remove('active');
+    } else {
+        document.getElementById('secConfigExercises').style.display = 'none';
+        document.getElementById('secConfigPrograms').style.display = 'block';
+        document.getElementById('btnTabExercises').classList.remove('active');
+        document.getElementById('btnTabPrograms').classList.add('active');
+    }
+}
+
+function handleLogin(event) {
+    event.preventDefault();
+    const rawUser = document.getElementById('username').value.trim();
+    const user = rawUser.toLowerCase();
+    const pass = document.getElementById('password').value; 
+    
+    if (user === 'prasath' || user === 'trainer' || user === 'pt' || user === 'preseth' || user === 'prasaath') {
+        if (pass === appData.trainerPassword || pass === '123456') {
+            document.getElementById('trainerWelcome').innerText = "👋 Welcome, Prasath";
+            showScreen('trainerDashboard');
+        } else {
+            alert("Invalid Trainer Password!");
+        }
+    } else {
+        let found = appData.trainees.find(t => t.username.toLowerCase() === user && t.password === pass);
+        if(found) {
+            currentLoggedInClientUsername = found.username;
+            document.getElementById('clientWelcome').innerText = "👋 Welcome, " + found.name;
+            document.getElementById('clientPassBtn').setAttribute('onclick', `openChangePasswordModal('client', '${found.username}')`);
+            showScreen('traineeDashboard');
+            renderTraineeLogs(found.name);
+        } else {
+            alert("Invalid Username or Password!");
+        }
+    }
+}
+
+function logout() {
+    document.getElementById('username').value = 'Prasath';
+    document.getElementById('password').value = '123456';
+    currentLoggedInClientUsername = "";
+    showScreen('loginScreen');
+}
+
+let targetClientUser = "";
+function openChangePasswordModal(type, clientUser = "") {
+    document.getElementById('passModalUserType').value = type;
+    document.getElementById('newPasswordInput').value = "";
+    targetClientUser = clientUser;
+    let myModal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+    myModal.show();
+}
+
+function processPasswordChange() {
+    let type = document.getElementById('passModalUserType').value;
+    let newPass = document.getElementById('newPasswordInput').value.trim();
+    if(!newPass) { alert("Please enter a valid password!"); return; }
+
+    if(type === 'trainer') {
+        appData.trainerPassword = newPass;
+        syncToFirebase();
+        alert("Trainer password updated successfully!");
+    } else {
+        let idx = appData.trainees.findIndex(t => t.username.toLowerCase() === targetClientUser.toLowerCase());
+        if(idx !== -1) {
+            appData.trainees[idx].password = newPass;
+            syncToFirebase();
+            alert("Client password updated successfully!");
+        }
+    }
+    bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+}
+
+function saveTrainee(e) {
+    e.preventDefault();
+    let newTrainee = {
+        name: document.getElementById('tName').value,
+        username: document.getElementById('tUser').value.trim(),
+        password: document.getElementById('tPass').value,
+        phone: document.getElementById('tPhone').value.trim()
+    };
+    appData.trainees.push(newTrainee);
+    syncToFirebase();
+    alert('Trainee Registered Successfully!');
+    e.target.reset();
+    renderTrainees();
+}
+
+function renderTrainees() {
+    let html = "";
+    appData.trainees.forEach((t, index) => {
+        html += `<tr><td>${t.name}<br><small class="text-muted">📱 ${t.phone || 'No Phone'}</small></td><td>${t.username}</td><td><code>${t.password}</code></td><td class="text-end"><button class="btn btn-xs btn-del-custom py-0 px-2 rounded" style="font-size:12px;" onclick="deleteTrainee(${index})">Del</button></td></tr>`;
+    });
+    document.getElementById('traineeTableBody').innerHTML = html || "<tr><td colspan='4' class='text-center text-muted'>No trainees found.</td></tr>";
+}
+
+function deleteTrainee(index) {
+    if(confirm("Delete this Trainee?")) {
+        appData.trainees.splice(index, 1);
+        syncToFirebase();
+        renderTrainees();
+    }
+}
+
+function saveGlobalProgram(e) {
+    e.preventDefault();
+    let name = document.getElementById('progName').value.trim();
+    if(name && !appData.masterPrograms.includes(name)) {
+        appData.masterPrograms.push(name);
+        syncToFirebase();
+        alert('Program added to Master List successfully!');
+        e.target.reset();
+        renderProgramCatalog();
+    } else {
+        alert('Program already exists or invalid!');
+    }
+}
+
+function renderProgramCatalog() {
+    let html = "";
+    appData.masterPrograms.forEach((p, index) => {
+        html += `<tr><td>🎯 <strong>${p}</strong></td><td class="text-end"><button class="btn btn-xs btn-danger py-0 px-2 rounded" style="font-size:11px;" onclick="deleteGlobalProgram(${index})">X</button></td></tr>`;
+    });
+    document.getElementById('programCatalogTableBody').innerHTML = html || "<tr><td colspan='2' class='text-center text-muted'>No Master Programs.</td></tr>";
+}
+
+function deleteGlobalProgram(index) {
+    if(confirm("Remove program from master list?")) {
+        appData.masterPrograms.splice(index, 1);
+        syncToFirebase();
+        renderProgramCatalog();
+    }
+}
+
+function populateProgramDropdown() {
+    let options = '<option value="">-- Select Master Program --</option>';
+    appData.masterPrograms.forEach(p => {
+        options += `<option value="${p}">${p}</option>`;
+    });
+    if(document.getElementById('logProgram')) document.getElementById('logProgram').innerHTML = options;
+}
+
+function saveGlobalActivity(e) {
+    e.preventDefault();
+    let newAct = {
+        category: document.getElementById('actCategory').value.toLowerCase(),
+        name: document.getElementById('actName').value.trim()
+    };
+    appData.masterActivities.push(newAct);
+    syncToFirebase();
+    alert('Exercise added to Master List successfully!');
+    e.target.reset();
+    renderActivityCatalog();
+}
+
+function renderActivityCatalog() {
+    let html = "";
+    appData.masterActivities.forEach((a, index) => {
+        html += `<tr><td><span class="badge bg-secondary">${a.category.substring(0,3).toUpperCase()}</span></td><td><strong>${a.name}</strong></td><td class="text-end"><button class="btn btn-xs btn-danger py-0 px-2 rounded" style="font-size:11px;" onclick="deleteGlobalActivity(${index})">X</button></td></tr>`;
+    });
+    document.getElementById('activityCatalogTableBody').innerHTML = html || "<tr><td colspan='3' class='text-center text-muted'>Catalog empty.</td></tr>";
+}
+
+function deleteGlobalActivity(index) {
+    if(confirm("Remove from standard list?")) {
+        appData.masterActivities.splice(index, 1);
+        syncToFirebase();
+        renderActivityCatalog();
+    }
+}
+
+function populateTraineeDropdowns() {
+    let selectOptions = '<option value="">-- Choose Trainee --</option>';
+    let searchOptions = '<option value="">All Trainees</option>';
+    appData.trainees.forEach(t => {
+        selectOptions += `<option value="${t.name}">${t.name}</option>`;
+        searchOptions += `<option value="${t.name}">${t.name}</option>`;
+    });
+    if(document.getElementById('logTraineeSelect')) document.getElementById('logTraineeSelect').innerHTML = selectOptions;
+    if(document.getElementById('searchTraineeSelect')) document.getElementById('searchTraineeSelect').innerHTML = searchOptions;
+}
+
+function getBodyPartDropdown() {
+    return `
+        <option value="General">General</option>
+        <option value="Leg">Leg</option>
+        <option value="Chest">Chest</option>
+        <option value="Back">Back</option>
+        <option value="Arms">Arms</option>
+        <option value="Shoulder">Shoulder</option>
+        <option value="Abs/Core">Abs/Core</option>
+    `;
+}
+
+function openAddLogBlank() {
+    document.getElementById('editLogIndex').value = "-1";
+    document.getElementById('logScreenTitle').innerText = "📝 Add Workout Log";
+    document.getElementById('logSubmitBtn').innerText = "SUBMIT WORKOUT LOG";
+    document.getElementById('warmupSection').innerHTML = "";
+    document.getElementById('strengthSection').innerHTML = "";
+    document.getElementById('cardioSection').innerHTML = "";
+    document.getElementById('sendWhatsAppCheck').checked = false;
+    if(document.getElementById('logTraineeSelect')) document.getElementById('logTraineeSelect').value = "";
+    populateProgramDropdown();
+    document.getElementById('logDate').valueAsDate = new Date();
+    showScreen('addLogScreen');
+}
+
+function addWarmupRow(valTime = "10 Mins", valInt = "Medium", valNotes = "") {
+    const section = document.getElementById('warmupSection');
+    const container = document.createElement('div');
+    container.className = 'log-row-container';
+    
+    container.innerHTML = `
+        <div class="row g-1 align-items-center mb-1">
+            <div class="col-5">
+                <label class="small text-muted" style="font-size:10px;">TIME</label>
+                <input type="text" class="form-control form-control-sm time-input" placeholder="e.g. 10 Mins">
+            </div>
+            <div class="col-6">
+                <label class="small text-muted" style="font-size:10px;">INTENSITY</label>
+                <input type="text" class="form-control form-control-sm int-input" placeholder="e.g. Medium">
+            </div>
+            <div class="col-1 text-end pt-3"><button type="button" class="btn btn-sm text-danger fw-bold py-0" onclick="this.closest('.log-row-container').remove()">X</button></div>
+        </div>
+        <div class="row mt-1">
+            <div class="col-12"><textarea class="form-control form-control-sm notes-input" rows="1" placeholder="Notes..."></textarea></div>
+        </div>
+    `;
+    section.appendChild(container);
+    if(valTime) container.querySelector('.time-input').value = valTime;
+    if(valInt) container.querySelector('.int-input').value = valInt;
+    if(valNotes) container.querySelector('.notes-input').value = valNotes;
+}
+
+function addStrengthRow(valBody = "Leg", valWeight = "10 kg", valReps = "10 Reps", valNotes = "") {
+    const section = document.getElementById('strengthSection');
+    const container = document.createElement('div');
+    container.className = 'log-row-container';
+    
+    container.innerHTML = `
+        <div class="row g-1 log-row align-items-center mb-1">
+            <div class="col-11">
+                <label class="small text-muted" style="font-size:10px;">BODY PART</label>
+                <select class="form-select form-select-sm bodypart-input" required>${getBodyPartDropdown()}</select>
+            </div>
+            <div class="col-1 text-end pt-3"><button type="button" class="btn btn-sm text-danger fw-bold py-0" onclick="this.closest('.log-row-container').remove()">X</button></div>
+        </div>
+        <div class="row g-1 align-items-center">
+            <div class="col-6">
+                <label class="small text-muted" style="font-size:10px;">WEIGHT</label>
+                <input type="text" class="form-control form-control-sm weight-input" placeholder="e.g. 10 kg">
+            </div>
+            <div class="col-6">
+                <label class="small text-muted" style="font-size:10px;">REPS</label>
+                <input type="text" class="form-control form-control-sm reps-input" placeholder="e.g. 10 Reps">
+            </div>
+        </div>
+        <div class="row mt-1">
+            <div class="col-12"><textarea class="form-control form-control-sm notes-input" rows="1" placeholder="Notes..."></textarea></div>
+        </div>
+    `;
+    section.appendChild(container);
+    if(valBody) container.querySelector('.bodypart-input').value = valBody;
+    if(valWeight) container.querySelector('.weight-input').value = valWeight;
+    if(valReps) container.querySelector('.reps-input').value = valReps;
+    if(valNotes) container.querySelector('.notes-input').value = valNotes;
+}
+
+function addCardioRow(valTime = "15 Mins", valInt = "Medium", valNotes = "") {
+    const section = document.getElementById('cardioSection');
+    const container = document.createElement('div');
+    container.className = 'log-row-container';
+    
+    container.innerHTML = `
+        <div class="row g-1 align-items-center mb-1">
+            <div class="col-5">
+                <label class="small text-muted" style="font-size:10px;">TIME</label>
+                <input type="text" class="form-control form-control-sm time-input" placeholder="e.g. 15 Mins">
+            </div>
+            <div class="col-6">
+                <label class="small text-muted" style="font-size:10px;">INTENSITY</label>
+                <input type="text" class="form-control form-control-sm int-input" placeholder="e.g. Medium">
+            </div>
+            <div class="col-1 text-end pt-3"><button type="button" class="btn btn-sm text-danger fw-bold py-0" onclick="this.closest('.log-row-container').remove()">X</button></div>
+        </div>
+        <div class="row mt-1">
+            <div class="col-12"><textarea class="form-control form-control-sm notes-input" rows="1" placeholder="Notes..."></textarea></div>
+        </div>
+    `;
+    section.appendChild(container);
+    if(valTime) container.querySelector('.time-input').value = valTime;
+    if(valInt) container.querySelector('.int-input').value = valInt;
+    if(valNotes) container.querySelector('.notes-input').value = valNotes;
+}
+
+function saveWorkoutLog(e) {
+    e.preventDefault();
+    let editIndex = parseInt(document.getElementById('editLogIndex').value);
+    let selectedTraineeName = document.getElementById('logTraineeSelect').value;
+    let selectedDate = document.getElementById('logDate').value;
+    let selectedProgram = document.getElementById('logProgram').value;
+    let sendWhatsApp = document.getElementById('sendWhatsAppCheck').checked;
+    
+    let warmupRows = document.querySelectorAll('#warmupSection .log-row-container');
+    let warmupData = [];
+    warmupRows.forEach(row => {
+        warmupData.push({
+            time: row.querySelector('.time-input').value,
+            intensity: row.querySelector('.int-input').value,
+            notes: row.querySelector('.notes-input').value
+        });
+    });
+
+    let strengthRows = document.querySelectorAll('#strengthSection .log-row-container');
+    let strengthData = [];
+    strengthRows.forEach(row => {
+        strengthData.push({
+            bodyPart: row.querySelector('.bodypart-input').value,
+            weight: row.querySelector('.weight-input').value,
+            reps: row.querySelector('.reps-input').value,
+            notes: row.querySelector('.notes-input').value
+        });
+    });
+
+    let cardioRows = document.querySelectorAll('#cardioSection .log-row-container');
+    let cardioData = [];
+    cardioRows.forEach(row => {
+        cardioData.push({
+            time: row.querySelector('.time-input').value,
+            intensity: row.querySelector('.int-input').value,
+            notes: row.querySelector('.notes-input').value
+        });
+    });
+
+    let logObj = {
+        trainee: selectedTraineeName,
+        date: selectedDate,
+        program: selectedProgram,
+        warmup: warmupData,
+        strength: strengthData,
+        cardio: cardioData
+    };
+
+    if(editIndex === -1) {
+        appData.workoutLogs.push(logObj);
+        alert('Workout Log Added Successfully!');
+    } else {
+        appData.workoutLogs[editIndex] = logObj;
+        alert('Workout Log Updated Successfully!');
+    }
+    
+    syncToFirebase();
+
+    if (sendWhatsApp) {
+        let traineeObj = appData.trainees.find(t => t.name === selectedTraineeName);
+        if (traineeObj && traineeObj.phone) {
+            let phoneNum = traineeObj.phone.replace(/[^0-9]/g, '');
+            let portalLink = "https://pt-log-system.vercel.app/";
+            let msg = `Hello ${traineeObj.name}!\n\nYour PT Workout Log for date ${selectedDate} (Program: ${selectedProgram}) has been updated by your trainer Prasath.\n\nPlease check your PT Log portal here:\n${portalLink}`;
+            let waUrl = `https://wa.me/${phoneNum}?text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, '_blank');
+        } else {
+            alert("Workout saved successfully, but phone number not found for this trainee to send WhatsApp notification!");
+        }
+    }
+
+    e.target.reset();
+    openAddLogBlank();
+    showScreen('trainerDashboard');
+}
+
+function triggerEditLog(index) {
+    let log = appData.workoutLogs[index];
+    if(!log) return;
+
+    showScreen('addLogScreen');
+    populateTraineeDropdowns();
+    populateProgramDropdown();
+
+    document.getElementById('editLogIndex').value = index;
+    document.getElementById('logScreenTitle').innerText = "✏️ Edit Workout Log";
+    document.getElementById('logSubmitBtn').innerText = "UPDATE WORKOUT LOG";
+
+    document.getElementById('logTraineeSelect').value = log.trainee;
+    document.getElementById('logDate').value = log.date;
+    document.getElementById('logProgram').value = log.program;
+
+    document.getElementById('warmupSection').innerHTML = "";
+    (log.warmup || []).forEach(w => addWarmupRow(w.time, w.intensity, w.notes));
+
+    document.getElementById('strengthSection').innerHTML = "";
+    (log.strength || []).forEach(s => addStrengthRow(s.bodyPart, s.weight, s.reps, s.notes));
+
+    document.getElementById('cardioSection').innerHTML = "";
+    (log.cardio || []).forEach(c => addCardioRow(c.time, c.intensity, c.notes));
+}
+
+function triggerDeleteLog(index) {
+    if(confirm("Are you sure you want to permanently delete this workout log?")) {
+        appData.workoutLogs.splice(index, 1);
+        syncToFirebase();
+        alert("Workout record successfully deleted.");
+        searchLogs(); 
+    }
+}
+
+function searchLogs() {
+    let targetTrainee = document.getElementById('searchTraineeSelect').value;
+    let html = "";
+    for(let i = appData.workoutLogs.length - 1; i >= 0; i--) {
+        let l = appData.workoutLogs[i];
+        if(targetTrainee && l.trainee !== targetTrainee) continue;
+
+        let warmupHtml = "";
+        (l.warmup || []).forEach(w => { 
+            warmupHtml += `<div class="mb-1">• Time: <strong>${w.time || '-'}</strong> | Int: ${w.intensity || '-'} ${w.notes ? `<div class="pin-note-box">📌 ${w.notes}</div>` : ''}</div>`; 
+        });
+
+        let strengthHtml = "";
+        (l.strength || []).forEach(s => { 
+            let bodyBadge = s.bodyPart ? `<span class="badge bg-secondary text-white border-0 me-1">[${s.bodyPart}]</span>` : '';
+            strengthHtml += `<div class="mb-1">• ${bodyBadge}Weight: <strong>${s.weight || '-'}</strong> | Reps: <strong>${s.reps || '-'}</strong> ${s.notes ? `<div class="pin-note-box">📌 ${s.notes}</div>` : ''}</div>`; 
+        });
+
+        let cardioHtml = "";
+        (l.cardio || []).forEach(c => { 
+            cardioHtml += `<div class="mb-1">• Time: <strong>${c.time || '-'}</strong> | Int: ${c.intensity || '-'} ${c.notes ? `<div class="pin-note-box">📌 ${c.notes}</div>` : ''}</div>`; 
+        });
+
+        html += `
+        <div class="card card-custom mb-2 overflow-hidden border">
+            <div class="card-header p-0 border-0 bg-transparent">
+                <button class="btn w-100 text-start p-3 d-flex justify-content-between align-items-center accordion-button-custom collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dbLog${i}">
+                    <div><span class="d-block fw-bold text-white">${l.trainee}</span><span class="text-secondary small fw-normal">🎯 Program: ${l.program}</span></div>
+                    <span class="badge bg-secondary rounded-pill small">${l.date}</span>
+                </button>
+            </div>
+            <div id="dbLog${i}" class="collapse" data-bs-parent="#workoutLogsAccordion">
+                <div class="card-body bg-transparent pt-1 pb-3" style="font-size: 13px;">
+                    
+                    <span class="workout-badge badge-warmup">🔥 Warm Up</span>
+                    <div class="ps-2 text-secondary mb-2">${warmupHtml || "No warm up entries."}</div>
+                    
+                    <span class="workout-badge badge-strength">💪 Strength Training</span>
+                    <div class="ps-2 text-secondary mb-2">${strengthHtml || "No strength entries."}</div>
+                    
+                    <span class="workout-badge badge-cardio">🏃‍♂️ Cardio Training</span>
+                    <div class="ps-2 text-secondary mb-3">${cardioHtml || "No cardio entries."}</div>
+                    
+                    <div class="border-top border-secondary pt-2 d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-info px-3 fw-bold" onclick="triggerEditLog(${i})">✏️ Edit</button>
+                        <button class="btn btn-sm btn-outline-danger px-3 fw-bold" onclick="triggerDeleteLog(${i})">🗑️ Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }
+    document.getElementById('workoutLogsAccordion').innerHTML = html || "<div class='text-center text-muted small mt-3'>No records found.</div>";
+}
+
+function renderTraineeLogs(traineeName) {
+    let html = "";
+    for(let i = appData.workoutLogs.length - 1; i >= 0; i--) {
+        let l = appData.workoutLogs[i];
+        if(l.trainee !== traineeName) continue;
+
+        let warmupHtml = "";
+        (l.warmup || []).forEach(w => { 
+            warmupHtml += `<div>• Time: <strong>${w.time || '-'}</strong> | Int: ${w.intensity || '-'} ${w.notes ? `<div class="pin-note-box">📌 ${w.notes}</div>` : ''}</div>`; 
+        });
+
+        let strengthHtml = "";
+        (l.strength || []).forEach(s => { 
+            let bodyBadge = s.bodyPart ? `<span class="badge bg-secondary text-white border-0 me-1">[${s.bodyPart}]</span>` : '';
+            strengthHtml += `<div>• ${bodyBadge}Weight: <strong>${s.weight || '-'}</strong> | Reps: <strong>${s.reps || '-'}</strong> ${s.notes ? `<div class="pin-note-box">📌 ${s.notes}</div>` : ''}</div>`; 
+        });
+
+        let cardioHtml = "";
+        (l.cardio || []).forEach(c => { 
+            cardioHtml += `<div>• Time: <strong>${c.time || '-'}</strong> | Int: ${c.intensity || '-'} ${c.notes ? `<div class="pin-note-box">📌 ${c.notes}</div>` : ''}</div>`; 
+        });
+
+        html += `
+        <div class="card card-custom p-3 mb-2">
+            <div class="d-flex justify-content-between border-bottom border-secondary pb-2 mb-2"><span class="fw-bold text-success">Workout Log</span><span class="text-secondary small fw-medium">${l.date}</span></div>
+            <p class="mb-2 small text-light"><strong>Program:</strong> ${l.program}</p>
+            
+            <div class="bg-dark p-2 rounded small mb-2 border border-secondary">
+                <span class="fw-bold text-warning d-block mb-1" style="font-size:11px;">WARM UP</span>
+                ${warmupHtml || "None"}
+            </div>
+            <div class="bg-dark p-2 rounded small mb-2 border border-secondary">
+                <span class="fw-bold text-info d-block mb-1" style="font-size:11px;">STRENGTH</span>
+                ${strengthHtml || "None"}
+            </div>
+            <div class="bg-dark p-2 rounded small border border-secondary">
+                <span class="fw-bold text-success d-block mb-1" style="font-size:11px;">CARDIO</span>
+                ${cardioHtml || "None"}
+            </div>
+        </div>`;
+    }
+    document.getElementById('traineeLogsArea').innerHTML = html || "<div class='p-3 text-center text-muted small'>No workouts assigned yet.</div>";
+}
+
+document.getElementById('logDate').valueAsDate = new Date();
+</script>
+
+</body>
+</html>
